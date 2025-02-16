@@ -1,4 +1,5 @@
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import computed_field, PostgresDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -11,8 +12,13 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
+    BASE_DIR: Path = Path(__file__).resolve().parent.parent
     ANTHROPIC_API_KEY: str
     DISCORD_TOKEN: str
+    BASE_PROMPT: str = """
+    You are a friendly, helpful assistant. Respond with plain text as much as possible.
+    Markdown and code blocks are allowed. Do not generate artifacts.
+    """.strip()
 
     POSTGRESQL_USERNAME: str
     POSTGRESQL_PASSWORD: str

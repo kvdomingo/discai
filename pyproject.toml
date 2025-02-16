@@ -18,6 +18,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "ipython>=8.32.0",
     "ruff>=0.9.6",
     "watchdog[watchmedo]>=6.0.0",
 ]

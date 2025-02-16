@@ -43,6 +43,11 @@ def upgrade() -> None:
             "CREATE INDEX conversations_channel_id_ix ON conversations (channel_id)"
         )
     )
+    conn.execute(
+        sa.text(
+            "CREATE INDEX conversations_guild_id_channel_id_ix ON conversations (guild_id, channel_id)"
+        )
+    )
 
     conn.execute(
         sa.text("CREATE TYPE CHAT_ROLE AS ENUM ('user', 'assistant', 'system')")

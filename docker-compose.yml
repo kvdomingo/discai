@@ -13,6 +13,9 @@ services:
     volumes:
       - ./:/app
       - venv-data:/app/.venv
+    depends_on:
+      db:
+        condition: service_healthy
 
   db:
     image: ghcr.io/kvdomingo/postgresql-pig:17-bitnami
@@ -23,6 +26,12 @@ services:
       - ./db-init:/docker-entrypoint-initdb.d:ro
     ports:
       - '5432:5432'
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "${POSTGRESQL_USERNAME}", "-d", "${POSTGRESQL_DATABASE}" ]
+      timeout: 2s
+      start_interval: 5s
+      interval: 20s
+      start_period: 60s
 
   rest:
     image: postgrest/postgrest:v12.2.8
@@ -37,7 +46,8 @@ services:
     ports:
       - '3000:3000'
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
   swagger:
     image: swaggerapi/swagger-ui:v5.18.3
@@ -45,3 +55,5 @@ services:
       API_URL: http://localhost:3000
     ports:
       - '8080:8080'
+    depends_on:
+      - rest
