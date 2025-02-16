@@ -108,9 +108,14 @@ class BotCog(Cog):
                     (
                         await db.execute(
                             text("""
-                            SELECT * FROM messages
-                            WHERE conversation_id = :conversation_id
-                            AND chat_role <> 'system'
+                            WITH history AS (
+                                SELECT * FROM messages
+                                WHERE conversation_id = :conversation_id
+                                AND chat_role <> 'system'
+                                ORDER BY id DESC
+                                LIMIT 50
+                            )
+                            SELECT * FROM history
                             ORDER BY id;
                             """),
                             {
@@ -133,7 +138,7 @@ class BotCog(Cog):
                         ],
                         MessageParam(role="user", content=content),
                     ],
-                    model="claude-3-5-haiku-latest",
+                    model=settings.CHAT_MODEL,
                     system=settings.BASE_PROMPT,
                 )
                 reply = "".join([c.text for c in res.content if c.type == "text"])
@@ -150,6 +155,7 @@ class BotCog(Cog):
                     },
                 )
 
+                await db.commit()
                 await message.reply(reply)
 
 

@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     BASE_DIR: Path = Path(__file__).resolve().parent.parent
     ANTHROPIC_API_KEY: str
     DISCORD_TOKEN: str
+    CHAT_MODEL: str = "claude-3-5-haiku-latest"
     BASE_PROMPT: str = """
     You are a friendly, helpful assistant. Respond with plain text as much as possible.
     Markdown and code blocks are allowed. Do not generate artifacts.
