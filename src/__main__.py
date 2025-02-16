@@ -30,7 +30,7 @@ class BotCog(Cog):
     @Cog.listener()
     async def on_message(self, message: Message):
         if self.client.user in message.mentions:
-            async with get_db() as db:
+            async with message.channel.typing(), get_db() as db:
                 # Select existing conversation
                 res = (
                     (
