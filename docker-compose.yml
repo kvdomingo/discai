@@ -1,0 +1,47 @@
+name: discord-ai
+
+volumes:
+  db-data:
+  venv-data:
+
+services:
+  bot:
+    build: .
+    image: ghcr.io/kvdomingo/discord-ai
+    restart: unless-stopped
+    init: true
+    volumes:
+      - ./:/app
+      - venv-data:/app/.venv
+
+  db:
+    image: ghcr.io/kvdomingo/postgresql-pig:17-bitnami
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - db-data:/bitnami/postgresql
+      - ./db-init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - '5432:5432'
+
+  rest:
+    image: postgrest/postgrest:v12.2.8
+    restart: unless-stopped
+    environment:
+      PGRST_DB_URI: postgres://${POSTGRESQL_USERNAME}:${POSTGRESQL_PASSWORD}@db:5432/${POSTGRESQL_DATABASE}
+      PGRST_DB_SCHEMAS: public
+      PGRST_OPENAPI_SERVER_PROXY_URI: http://localhost:3000
+      PGRST_JWT_SECRET: ${PGRST_JWT_SECRET}
+      PGRST_JWT_IS_BASE64: ${PGRST_JWT_IS_BASE64}
+      PGRST_DB_ANON_ROLE: anon
+    ports:
+      - '3000:3000'
+    depends_on:
+      - db
+
+  swagger:
+    image: swaggerapi/swagger-ui:v5.18.3
+    environment:
+      API_URL: http://localhost:3000
+    ports:
+      - '8080:8080'

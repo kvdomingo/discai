@@ -1,0 +1,23 @@
+[project]
+name = "discord-ai"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "alembic>=1.14.1",
+    "anthropic>=0.45.2",
+    "asyncpg>=0.30.0",
+    "discord-py>=2.4.0",
+    "loguru>=0.7.3",
+    "pydantic>=2.10.6",
+    "pydantic-settings>=2.7.1",
+    "python-ulid>=3.0.0",
+    "sqlalchemy>=2.0.38",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.9.6",
+    "watchdog[watchmedo]>=6.0.0",
+]

@@ -1,0 +1,42 @@
+version: '3'
+
+dotenv: [ .env ]
+
+tasks:
+  default:
+    cmd:
+      task: up
+
+  up:
+    desc: Build and start Docker containers
+    cmd: docker compose up --detach --build --remove-orphans {{.CLI_ARGS}}
+
+  logs:
+    desc: Attach to Docker logs
+    interactive: true
+    cmd: docker compose logs --follow {{.CLI_ARGS}}
+
+  stop:
+    desc: Stop containers
+    cmd: docker compose stop {{.CLI_ARGS}}
+
+  restart:
+    desc: Restart containers
+    cmd: docker compose restart {{.CLI_ARGS}}
+
+  exec:
+    desc: Run a command in the specified container
+    cmd: docker compose exec -- {{.CLI_ARGS}}
+
+  psql:
+    desc: Run psql
+    interactive: true
+    cmd: task exec -- db psql "postgres://{{ .POSTGRESQL_USERNAME }}:{{ .POSTGRESQL_PASSWORD }}@localhost:5432/{{ .POSTGRESQL_DATABASE }}"
+
+  down:
+    desc: Remove containers
+    cmd: docker compose down --remove-orphans {{.CLI_ARGS}}
+
+  clean:
+    desc: Nuke everything
+    cmd: docker compose down --volumes --remove-orphans {{.CLI_ARGS}}
