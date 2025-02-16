@@ -2,13 +2,13 @@ import asyncio
 
 from anthropic import AsyncAnthropic
 from anthropic.types import MessageParam
-from discord import Intents, Message
+from discord import Intents, Message as DiscordMessage
 from discord.ext.commands import Bot, Cog
 from loguru import logger
 from sqlalchemy import text
 
 from src.db import get_db
-from src.schemas.conversations import Conversation
+from src.schemas.conversations import Conversation, Message
 from src.settings import settings
 
 intents = Intents.default()
@@ -28,7 +28,7 @@ class BotCog(Cog):
         logger.info("Hello, Discord!")
 
     @Cog.listener()
-    async def on_message(self, message: Message):
+    async def on_message(self, message: DiscordMessage):
         if self.client.user in message.mentions:
             async with message.channel.typing(), get_db() as db:
                 # Select existing conversation
@@ -51,16 +51,22 @@ class BotCog(Cog):
 
                 if res is None:
                     # Create conversation if there is none yet in the current channel
-                    res = await db.execute(
-                        text("""
-                        INSERT INTO conversations (guild_id, channel_id)
-                        VALUES (:guild_id, :channel_id)
-                        RETURNING *;
-                        """),
-                        {
-                            "guild_id": message.guild.id,
-                            "channel_id": message.channel.id,
-                        },
+                    res = (
+                        (
+                            await db.execute(
+                                text("""
+                                INSERT INTO conversations (guild_id, channel_id)
+                                VALUES (:guild_id, :channel_id)
+                                RETURNING *;
+                                """),
+                                {
+                                    "guild_id": message.guild.id,
+                                    "channel_id": message.channel.id,
+                                },
+                            )
+                        )
+                        .mappings()
+                        .first()
                     )
                     await db.commit()
 
@@ -97,9 +103,36 @@ class BotCog(Cog):
                     },
                 )
 
+                # Get all messages in conversation
+                res = (
+                    (
+                        await db.execute(
+                            text("""
+                            SELECT * FROM messages
+                            WHERE conversation_id = :conversation_id
+                            AND chat_role <> 'system'
+                            ORDER BY id;
+                            """),
+                            {
+                                "conversation_id": str(convo.id),
+                            },
+                        )
+                    )
+                    .mappings()
+                    .all()
+                )
+
+                messages = [Message.model_validate(r) for r in res]
+
                 res = await ant.messages.create(
                     max_tokens=1024,
-                    messages=[MessageParam(role="user", content=content)],
+                    messages=[
+                        *[
+                            MessageParam(role=m.chat_role.value, content=m.content)
+                            for m in messages
+                        ],
+                        MessageParam(role="user", content=content),
+                    ],
                     model="claude-3-5-haiku-latest",
                     system=settings.BASE_PROMPT,
                 )
