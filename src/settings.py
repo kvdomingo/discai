@@ -16,16 +16,25 @@ class Settings(BaseSettings):
     ANTHROPIC_API_KEY: str
     DISCORD_TOKEN: str
     CHAT_MODEL: str = "claude-3-5-haiku-latest"
-    BASE_PROMPT: str = """
-    You are a friendly, helpful assistant. Respond with plain text as much as possible.
-    Markdown and code blocks are allowed. Do not generate artifacts.
-    """.strip()
 
     POSTGRESQL_USERNAME: str
     POSTGRESQL_PASSWORD: str
     POSTGRESQL_DATABASE: str
     DB_HOST: str
     DB_PORT: int
+
+    @computed_field
+    @property
+    def BASE_PROMPT(self) -> str:
+        return f"""
+        You are a friendly, helpful assistant. Respond with plain text.
+        Markdown and code blocks are allowed. Do not generate artifacts.
+        Keep responses below 2000 characters as much as possible.
+
+        When asked about yourself, respond appropriately given the following information:
+        You are a Discord chat bot developed by Kenneth V. Domingo. Behind the scenes, you
+        are powered by the {self.CHAT_MODEL} large language model developed by Anthropic.
+        """.strip()
 
     @computed_field
     @property
