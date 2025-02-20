@@ -1,4 +1,5 @@
 import asyncio
+import re
 
 from anthropic import AsyncAnthropic
 from anthropic.types import MessageParam
@@ -86,9 +87,7 @@ class BotCog(Cog):
                 else:
                     convo = Conversation.model_validate(res)
 
-                content = message.content.replace(
-                    f"<@{self.client.user.id}>", ""
-                ).strip()
+                content = re.sub(r"\s*<@\d+>\s*", "", message.content)
 
                 # Insert user message
                 await db.execute(
