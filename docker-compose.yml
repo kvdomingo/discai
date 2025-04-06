@@ -3,6 +3,7 @@ name: discord-ai
 volumes:
   db-data:
   venv-data:
+  pgadmin-data:
 
 services:
   bot:
@@ -51,9 +52,23 @@ services:
 
   swagger:
     image: swaggerapi/swagger-ui:v5.18.3
+    restart: unless-stopped
     environment:
       API_URL: http://localhost:3000
     ports:
       - '8080:8080'
     depends_on:
       - rest
+
+  pgadmin:
+    image: dpage/pgadmin4:9
+    restart: unless-stopped
+    environment:
+      PGADMIN_LISTEN_HOST: 0.0.0.0
+      PGADMIN_LISTEN_PORT: 5000
+      PGADMIN_DEFAULT_EMAIL: hello@kvd.studio
+      PGADMIN_DEFAULT_PASSWORD: admin
+    volumes:
+      - pgadmin-data:/pgadmin
+    ports:
+      - '5000:5000'

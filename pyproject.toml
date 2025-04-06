@@ -10,11 +10,13 @@ dependencies = [
     "anthropic>=0.45.2",
     "asyncpg>=0.30.0",
     "discord-py>=2.4.0",
+    "duckduckgo-search>=2025.4.4",
     "loguru>=0.7.3",
     "psycopg2-binary>=2.9.10",
     "pydantic>=2.10.6",
     "pydantic-settings>=2.7.1",
     "python-ulid>=3.0.0",
+    "requests>=2.32.3",
     "sqlalchemy>=2.0.38",
 ]
 

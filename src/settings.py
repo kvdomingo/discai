@@ -1,3 +1,4 @@
+import os
 from functools import lru_cache
 from pathlib import Path
 from textwrap import dedent
@@ -15,9 +16,16 @@ class Settings(BaseSettings):
 
     BASE_DIR: Path = Path(__file__).resolve().parent.parent
     ANTHROPIC_API_KEY: str
+    OPENWEATHERMAP_API_KEY: str
+    AGNO_API_KEY: str
     DISCORD_TOKEN: str
     CHAT_MODEL: str = "claude-3-5-sonnet-latest"
     TITLE_MODEL: str = "claude-3-5-haiku-latest"
+    SYSTEM_PROMPT: str = dedent("""\
+    You are a friendly, helpful assistant.
+    Respond with plain text. Markdown and code blocks are allowed. Do not generate artifacts.
+    Keep responses below 2000 characters.
+    """).strip()
 
     POSTGRESQL_USERNAME: str
     POSTGRESQL_PASSWORD: str
@@ -27,18 +35,13 @@ class Settings(BaseSettings):
 
     @computed_field
     @property
-    def BASE_PROMPT(self) -> str:
+    def SYSTEM_PROMPT_ADDITIONAL_CONTEXT(self) -> str:
         return dedent(f"""\
-        You are a friendly, helpful assistant.
-        Respond with plain text. Markdown and code blocks are allowed. Do not generate artifacts.
-        Keep responses below 2000 characters.
-
-        ---
-
         When asked about yourself, use the following metadata:
+        - Your name is DiscAI.
         - You are a Discord chat bot developed by GitHub user @kvdomingo.
         - Behind the scenes, you are powered by the `{self.CHAT_MODEL}` large language model developed by Anthropic.
-        """).strip()
+        """)
 
     @computed_field
     @property
@@ -74,7 +77,10 @@ class Settings(BaseSettings):
 
 @lru_cache
 def _get_settings():
-    return Settings()
+    settings = Settings()
+    os.environ.setdefault("AGNO_API_KEY", settings.AGNO_API_KEY)
+    os.environ.setdefault("AGNO_MONITOR", "true")
+    return settings
 
 
 settings = _get_settings()
