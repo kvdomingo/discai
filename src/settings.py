@@ -2,6 +2,7 @@ import os
 from functools import lru_cache
 from pathlib import Path
 from textwrap import dedent
+from typing import Literal
 
 from pydantic import computed_field, PostgresDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -14,17 +15,26 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
+    PYTHON_ENV: Literal["development", "production"] = "production"
     BASE_DIR: Path = Path(__file__).resolve().parent.parent
     ANTHROPIC_API_KEY: str
     OPENWEATHERMAP_API_KEY: str
     AGNO_API_KEY: str
+    AGNO_MONITOR: bool
     DISCORD_TOKEN: str
-    CHAT_MODEL: str = "claude-3-5-sonnet-latest"
+    NEW_SESSION_TITLE_PLACEHOLDER: str = "New conversation"
+    CHAT_MODEL: str = "claude-3-7-sonnet-latest"
     TITLE_MODEL: str = "claude-3-5-haiku-latest"
     SYSTEM_PROMPT: str = dedent("""\
     You are a friendly, helpful assistant.
     Respond with plain text. Markdown and code blocks are allowed. Do not generate artifacts.
     Keep responses below 2000 characters.
+    """).strip()
+    TITLE_SYSTEM_PROMPT: str = dedent("""\
+    Generate a short title for the provided message.
+    The title must be a very concise summary of the message.
+    Do not exceed 20 characters.
+    Use only plain text. Do not use any special characters.
     """).strip()
 
     POSTGRESQL_USERNAME: str
@@ -79,7 +89,7 @@ class Settings(BaseSettings):
 def _get_settings():
     settings = Settings()
     os.environ.setdefault("AGNO_API_KEY", settings.AGNO_API_KEY)
-    os.environ.setdefault("AGNO_MONITOR", "true")
+    os.environ.setdefault("AGNO_MONITOR", str(settings.AGNO_MONITOR).lower())
     return settings
 
 

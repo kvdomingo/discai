@@ -8,7 +8,7 @@ from agno.tools.openweather import OpenWeatherTools
 from src.settings import settings
 
 
-def get_agent(conversation_id: str, user_id: str):
+def get_chat_agent(conversation_id: str, user_id: str):
     return Agent(
         model=Claude(settings.CHAT_MODEL, api_key=settings.ANTHROPIC_API_KEY),
         name="DiscAI",
@@ -31,6 +31,7 @@ def get_agent(conversation_id: str, user_id: str):
             auto_upgrade_schema=True,
         ),
         tool_call_limit=5,
+        show_tool_calls=False,
         session_id=conversation_id,
         user_id=user_id,
         read_chat_history=True,
@@ -39,3 +40,12 @@ def get_agent(conversation_id: str, user_id: str):
         monitoring=True,
         debug_mode=True,
     )
+
+
+title_agent = Agent(
+    model=Claude(settings.TITLE_MODEL, api_key=settings.ANTHROPIC_API_KEY),
+    system_message=settings.TITLE_SYSTEM_PROMPT,
+    telemetry=True,
+    monitoring=True,
+    debug_mode=True,
+)
