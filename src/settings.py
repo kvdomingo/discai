@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     AGNO_MONITOR: bool
     DISCORD_TOKEN: str
     NEW_SESSION_TITLE_PLACEHOLDER: str = "New conversation"
-    CHAT_MODEL: str = "claude-3-7-sonnet-latest"
+    CHAT_MODEL: str = "claude-3-5-sonnet-latest"
     TITLE_MODEL: str = "claude-3-5-haiku-latest"
     SYSTEM_PROMPT: str = dedent("""\
     You are a friendly, helpful assistant.

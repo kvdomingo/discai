@@ -1,5 +1,6 @@
 import asyncio
 import re
+from time import time
 
 from agno.run.response import RunResponse
 from discord import Intents, Message, Thread
@@ -41,8 +42,6 @@ class BotCog(Cog):
             return
 
         async with message.channel.typing(), get_db() as db:
-            is_new_thread = False
-
             if isinstance(message.channel, Thread):
                 thread_in_db = (
                     (
@@ -62,28 +61,34 @@ class BotCog(Cog):
                 if thread_in_db is None:
                     return
 
-                thread_id = thread_in_db["session_id"]
+                thread = self.client.get_channel(int(thread_in_db["session_id"]))
             else:
-                new_thread = await message.create_thread(
+                thread = await message.create_thread(
                     name=settings.NEW_SESSION_TITLE_PLACEHOLDER
                 )
-                is_new_thread = True
-                thread_id = new_thread.id
 
             agent = get_chat_agent(
-                conversation_id=str(thread_id),
+                conversation_id=str(thread.id),
                 user_id=str(message.author.id),
             )
             # Filter out Discord tags/mentions
             content = re.sub(r"\s*<@\d+>\s*", "", message.content)
-            res: RunResponse = await agent.arun(content)
+            chunk: RunResponse
+            stream_t0 = time()
+            full_message = ""
+            i = 0
+            async for chunk in await agent.arun(content, stream=True):
+                full_message += chunk.content
+                if i == 0:
+                    new_message = await thread.send(chunk.content)
+                else:
+                    stream_t1 = time()
+                    if stream_t1 - stream_t0 > 1:
+                        await new_message.edit(content=full_message)
+                    stream_t0 = time()
+                i += 1
 
-            if is_new_thread:
-                thread = message.thread
-            else:
-                thread = message.channel
-
-            await thread.send(res.content)
+            await new_message.edit(content=full_message)
 
             if thread.name == settings.NEW_SESSION_TITLE_PLACEHOLDER:
                 res = await title_agent.arun(content)
