@@ -11,6 +11,18 @@ services:
     image: ghcr.io/kvdomingo/discord-ai
     restart: unless-stopped
     init: true
+    environment:
+      AGNO_API_KEY: ${AGNO_API_KEY}
+      AGNO_MONITOR: ${AGNO_MONITOR}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DISCORD_TOKEN: ${DISCORD_TOKEN}
+      OPENWEATHERMAP_API_KEY: ${OPENWEATHERMAP_API_KEY}
+      POSTGRESQL_DATABASE: ${POSTGRESQL_DATABASE}
+      POSTGRESQL_PASSWORD: ${POSTGRESQL_PASSWORD}
+      POSTGRESQL_USERNAME: ${POSTGRESQL_USERNAME}
+      PYTHON_ENV: ${PYTHON_ENV}
     volumes:
       - ./:/app
       - venv-data:/app/.venv
@@ -21,7 +33,10 @@ services:
   db:
     image: ghcr.io/kvdomingo/postgresql-pig-standalone:17-bitnami
     restart: unless-stopped
-    env_file: .env
+    environment:
+      POSTGRESQL_USERNAME: ${POSTGRESQL_USERNAME}
+      POSTGRESQL_PASSWORD: ${POSTGRESQL_PASSWORD}
+      POSTGRESQL_DATABASE: ${POSTGRESQL_DATABASE}
     volumes:
       - db-data:/bitnami/postgresql
       - ./db-init:/docker-entrypoint-initdb.d:ro

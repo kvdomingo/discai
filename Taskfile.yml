@@ -1,15 +1,22 @@
 version: '3'
 
-dotenv: [ .env ]
-
 tasks:
   default:
     cmd:
       task: up
 
+  init:
+    desc: Initial setup
+    cmds:
+      - pip install -U pre-commit
+      - pre-commit install
+      - mise trust -y
+      - mise install -y
+      - uv sync
+
   up:
     desc: Build and start Docker containers
-    cmd: docker compose up --detach --build --remove-orphans {{.CLI_ARGS}}
+    cmd: infisical run -- docker compose up --detach --build --remove-orphans {{.CLI_ARGS}}
 
   logs:
     desc: Attach to Docker logs
