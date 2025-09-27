@@ -1,7 +1,9 @@
 import asyncio
 import re
+from textwrap import dedent
 from time import time
 
+from agno.exceptions import ModelProviderError
 from agno.run.response import RunResponse
 from discord import Intents, Message, Thread
 from discord.ext.commands import Bot, Cog
@@ -67,6 +69,9 @@ class BotCog(Cog):
                     name=settings.NEW_SESSION_TITLE_PLACEHOLDER
                 )
 
+            if not isinstance(thread, Thread):
+                raise TypeError(f"Expected Thread, got {type(thread)}")
+
             agent = get_chat_agent(
                 conversation_id=str(thread.id),
                 user_id=str(message.author.id),
@@ -77,16 +82,48 @@ class BotCog(Cog):
             stream_t0 = time()
             full_message = ""
             i = 0
-            async for chunk in await agent.arun(content, stream=True):
-                full_message += chunk.content
-                if i == 0:
-                    new_message = await thread.send(chunk.content)
-                else:
+            new_message: Message | None = None
+            try:
+                async for chunk in await agent.arun(content, stream=True):
+                    full_message += str(chunk.content)
+
+                    if i == 0:
+                        new_message = await thread.send(chunk.content)
+                        i += 1
+                        continue
+
+                    if new_message is None:
+                        raise ValueError("New message not found")
+
                     stream_t1 = time()
                     if stream_t1 - stream_t0 > 1:
                         await new_message.edit(content=full_message)
                     stream_t0 = time()
-                i += 1
+                    i += 1
+            except ModelProviderError as e:
+                if "service unavailable" in e.message.lower():
+                    await thread.send(
+                        dedent("""```
+                        [SYSTEM] The Gemini API is currently experiencing high traffic. Please try again later.
+                        ```""")
+                    )
+                else:
+                    await thread.send(
+                        dedent("""```
+                        [SYSTEM] An unknown error occurred. Please try again later.
+                        ```""")
+                    )
+                raise
+            except Exception:
+                await thread.send(
+                    dedent("""```
+                    [SYSTEM] An unknown error occurred. Please try again later.
+                    ```""")
+                )
+                raise
+
+            if new_message is None:
+                raise ValueError("New message not found")
 
             await new_message.edit(content=full_message)
 

@@ -1,19 +1,34 @@
-from agno.agent import Agent
-from agno.models.anthropic import Claude
+from textwrap import dedent
+
+from agno.agent.agent import Agent
+from agno.models.google.gemini import Gemini
 from agno.storage.postgres import PostgresStorage
 from agno.tools.calculator import CalculatorTools
 from agno.tools.duckduckgo import DuckDuckGoTools
 from agno.tools.openweather import OpenWeatherTools
+from google.genai.types import GenerateContentConfig, ThinkingConfig
 
 from src.settings import settings
 
 
 def get_chat_agent(conversation_id: str, user_id: str):
     return Agent(
-        model=Claude(settings.CHAT_MODEL, api_key=settings.ANTHROPIC_API_KEY),
+        model=Gemini(
+            settings.CHAT_MODEL,
+            api_key=settings.GOOGLE_API_KEY,
+            vertexai=settings.GOOGLE_GENAI_USE_VERTEXAI,
+            project_id=settings.GOOGLE_CLOUD_PROJECT,
+            location=settings.GOOGLE_CLOUD_LOCATION,
+            generation_config=GenerateContentConfig(
+                thinking_config=ThinkingConfig(thinking_budget=0)
+            ),
+        ),
         name="DiscAI",
-        system_message=settings.SYSTEM_PROMPT,
-        additional_context=settings.SYSTEM_PROMPT_ADDITIONAL_CONTEXT,
+        system_message=dedent(f"""
+        {settings.SYSTEM_PROMPT}
+
+        {settings.SYSTEM_PROMPT_ADDITIONAL_CONTEXT}
+        """),
         markdown=True,
         add_name_to_instructions=True,
         add_datetime_to_instructions=True,
@@ -43,7 +58,16 @@ def get_chat_agent(conversation_id: str, user_id: str):
 
 
 title_agent = Agent(
-    model=Claude(settings.TITLE_MODEL, api_key=settings.ANTHROPIC_API_KEY),
+    model=Gemini(
+        settings.TITLE_MODEL,
+        api_key=settings.GOOGLE_API_KEY,
+        vertexai=settings.GOOGLE_GENAI_USE_VERTEXAI,
+        project_id=settings.GOOGLE_CLOUD_PROJECT,
+        location=settings.GOOGLE_CLOUD_LOCATION,
+        generation_config=GenerateContentConfig(
+            thinking_config=ThinkingConfig(thinking_budget=0)
+        ),
+    ),
     system_message=settings.TITLE_SYSTEM_PROMPT,
     telemetry=True,
     monitoring=True,

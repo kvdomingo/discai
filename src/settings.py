@@ -4,7 +4,7 @@ from pathlib import Path
 from textwrap import dedent
 from typing import Literal
 
-from pydantic import computed_field, PostgresDsn
+from pydantic import PostgresDsn, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -18,16 +18,22 @@ class Settings(BaseSettings):
     PYTHON_ENV: Literal["development", "production"] = "production"
     BASE_DIR: Path = Path(__file__).resolve().parent.parent
     ANTHROPIC_API_KEY: str
+    GOOGLE_API_KEY: str
+    GOOGLE_GENAI_USE_VERTEXAI: bool = False
+    GOOGLE_CLOUD_PROJECT: str
+    GOOGLE_CLOUD_LOCATION: str
     OPENWEATHERMAP_API_KEY: str
     AGNO_API_KEY: str
     AGNO_MONITOR: bool
     DISCORD_TOKEN: str
     NEW_SESSION_TITLE_PLACEHOLDER: str = "New conversation"
-    CHAT_MODEL: str = "claude-3-5-sonnet-latest"
-    TITLE_MODEL: str = "claude-3-5-haiku-latest"
+    CHAT_MODEL: str = "gemini-2.5-flash"
+    TITLE_MODEL: str = "gemini-2.5-flash"
     SYSTEM_PROMPT: str = dedent("""\
-    You are a friendly, helpful assistant.
-    Respond with plain text. Markdown and code blocks are allowed. Do not generate artifacts.
+    You are a friendly, helpful, general-purpose assistant.
+    Respond with plain text.
+    Markdown and code blocks are allowed.
+    Do not generate images.
     Keep responses below 2000 characters.
     """).strip()
     TITLE_SYSTEM_PROMPT: str = dedent("""\
@@ -49,8 +55,8 @@ class Settings(BaseSettings):
         return dedent(f"""\
         When asked about yourself, use the following metadata:
         - Your name is DiscAI.
-        - You are a Discord chat bot developed by GitHub user @kvdomingo.
-        - Behind the scenes, you are powered by the `{self.CHAT_MODEL}` large language model developed by Anthropic.
+        - You are a Discord chat bot developed by GitHub user [kvdomingo](https://github.com/kvdomingo).
+        - Behind the scenes, you are powered by the `{self.CHAT_MODEL}` large language model developed by Google.
         """)
 
     @computed_field
