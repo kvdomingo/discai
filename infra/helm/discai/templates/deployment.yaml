@@ -38,7 +38,7 @@ spec:
       {{- end }}
       initContainers:
         - name: '{{ .Chart.Name }}-init-wait-db'
-          image: bitnami/postgresql:17
+          image: postgres:18
           imagePullPolicy: IfNotPresent
           command:
             - /bin/sh
