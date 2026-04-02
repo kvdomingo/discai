@@ -3,7 +3,6 @@ name: discord-ai
 volumes:
   db-data:
   venv-data:
-  pgadmin-data:
 
 services:
   bot:
@@ -12,22 +11,20 @@ services:
     restart: unless-stopped
     init: true
     environment:
+      AGNO_MONITOR: true
+      GOOGLE_GENAI_USE_VERTEXAI: false
+      PYTHON_ENV: development
       AGNO_API_KEY: ${AGNO_API_KEY}
-      AGNO_MONITOR: ${AGNO_MONITOR}
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
       DB_HOST: ${DB_HOST}
       DB_PORT: ${DB_PORT}
       DISCORD_TOKEN: ${DISCORD_TOKEN}
       GEMINI_API_KEY: ${GEMINI_API_KEY}
-      GOOGLE_API_KEY: ${GEMINI_API_KEY}
-      GOOGLE_GENAI_USE_VERTEXAI: false
       GOOGLE_CLOUD_PROJECT: ${GOOGLE_CLOUD_PROJECT}
       GOOGLE_CLOUD_LOCATION: ${GOOGLE_CLOUD_LOCATION}
       OPENWEATHERMAP_API_KEY: ${OPENWEATHERMAP_API_KEY}
       POSTGRESQL_DATABASE: ${POSTGRESQL_DATABASE}
       POSTGRESQL_PASSWORD: ${POSTGRESQL_PASSWORD}
       POSTGRESQL_USERNAME: ${POSTGRESQL_USERNAME}
-      PYTHON_ENV: ${PYTHON_ENV}
     volumes:
       - ./:/app
       - venv-data:/app/.venv
@@ -79,16 +76,3 @@ services:
       - '8080:8080'
     depends_on:
       - rest
-
-  pgadmin:
-    image: dpage/pgadmin4:9
-    restart: unless-stopped
-    environment:
-      PGADMIN_LISTEN_HOST: 0.0.0.0
-      PGADMIN_LISTEN_PORT: 5000
-      PGADMIN_DEFAULT_EMAIL: hello@kvd.studio
-      PGADMIN_DEFAULT_PASSWORD: admin
-    volumes:
-      - pgadmin-data:/pgadmin
-    ports:
-      - '5000:5000'

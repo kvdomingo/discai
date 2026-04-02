@@ -37,7 +37,9 @@ def get_chat_agent(conversation_id: str, user_id: str):
         tools=[
             CalculatorTools(enable_all=True),
             DuckDuckGoTools(),
-            OpenWeatherTools(api_key=settings.OPENWEATHERMAP_API_KEY),
+            OpenWeatherTools(
+                api_key=settings.OPENWEATHERMAP_API_KEY.get_secret_value()
+            ),
         ],
         storage=PostgresStorage(
             table_name="agent_sessions",
@@ -60,7 +62,7 @@ def get_chat_agent(conversation_id: str, user_id: str):
 title_agent = Agent(
     model=Gemini(
         settings.TITLE_MODEL,
-        api_key=settings.GOOGLE_API_KEY,
+        api_key=settings.GOOGLE_API_KEY.get_secret_value(),
         vertexai=settings.GOOGLE_GENAI_USE_VERTEXAI,
         project_id=settings.GOOGLE_CLOUD_PROJECT,
         location=settings.GOOGLE_CLOUD_LOCATION,

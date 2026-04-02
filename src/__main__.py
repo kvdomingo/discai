@@ -134,7 +134,7 @@ class BotCog(Cog):
 
 async def main():
     await bot.add_cog(BotCog(bot))
-    await bot.start(settings.DISCORD_TOKEN)
+    await bot.start(settings.DISCORD_TOKEN.get_secret_value())
 
 
 if __name__ == "__main__":

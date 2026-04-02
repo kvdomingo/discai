@@ -4,7 +4,7 @@ metadata:
   name: {{ include "discai.fullname" . }}
   labels:
     {{- include "discai.labels" . | nindent 4 }}
-  {{- with .Values.annotations }}
+  {{- with .Values.deploymentAnnotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
   {{- end }}
@@ -90,9 +90,9 @@ spec:
           {{- end }}
           envFrom:
             - secretRef:
-                name: '{{- include "discai.fullname" . }}-secrets'
+                name: "{{- include "discai.fullname" . }}-secrets"
             - configMapRef:
-                name: '{{- include "discai.fullname" . }}-configmap'
+                name: "{{- include "discai.fullname" . }}-configmap"
       {{- with .Values.volumes }}
       volumes:
         {{- toYaml . | nindent 8 }}
