@@ -88,7 +88,7 @@ class Settings(BaseSettings):
 
 
 @lru_cache
-def _get_settings():
+def _get_settings() -> Settings:
     settings = Settings()  # ty:ignore[missing-argument]
     os.environ.setdefault("AGNO_API_KEY", settings.AGNO_API_KEY.get_secret_value())
     os.environ.setdefault("AGNO_MONITOR", str(settings.AGNO_MONITOR).lower())

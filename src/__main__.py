@@ -107,19 +107,22 @@ class BotCog(Cog):
                         [SYSTEM] The Gemini API is currently experiencing high traffic. Please try again later.
                         ```""")
                     )
+                    logger.exception(e)
                 else:
                     await thread.send(
                         dedent("""```
                         [SYSTEM] An unknown error occurred. Please try again later.
                         ```""")
                     )
+                    logger.exception(e)
                 raise
-            except Exception:
+            except Exception as e:
                 await thread.send(
                     dedent("""```
                     [SYSTEM] An unknown error occurred. Please try again later.
                     ```""")
                 )
+                logger.exception(e)
                 raise
 
             if new_message is None:

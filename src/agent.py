@@ -15,7 +15,7 @@ def get_chat_agent(conversation_id: str, user_id: str):
     return Agent(
         model=Gemini(
             settings.CHAT_MODEL,
-            api_key=settings.GOOGLE_API_KEY,
+            api_key=settings.GOOGLE_API_KEY.get_secret_value(),
             vertexai=settings.GOOGLE_GENAI_USE_VERTEXAI,
             project_id=settings.GOOGLE_CLOUD_PROJECT,
             location=settings.GOOGLE_CLOUD_LOCATION,
