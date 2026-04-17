@@ -1,4 +1,6 @@
 [tools]
+bun = "latest"
+prek = "latest"
 python = "3.12"
 task = "latest"
 uv = "latest"

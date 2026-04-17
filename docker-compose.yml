@@ -43,7 +43,7 @@ services:
       - db-data:/bitnami/postgresql
       - ./db-init:/docker-entrypoint-initdb.d:ro
     ports:
-      - '5432:5432'
+      - 5432:5432
     healthcheck:
       test: [ "CMD", "pg_isready", "-U", "${POSTGRESQL_USERNAME}", "-d", "${POSTGRESQL_DATABASE}" ]
       timeout: 2s
@@ -62,7 +62,7 @@ services:
       PGRST_JWT_IS_BASE64: ${PGRST_JWT_IS_BASE64}
       PGRST_DB_ANON_ROLE: anon
     ports:
-      - '3000:3000'
+      - 3000:3000
     depends_on:
       db:
         condition: service_healthy
@@ -73,6 +73,6 @@ services:
     environment:
       API_URL: http://localhost:3000
     ports:
-      - '8080:8080'
+      - 8080:8080
     depends_on:
       - rest
