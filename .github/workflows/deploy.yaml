@@ -17,7 +17,7 @@ jobs:
       packages: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup QEMU
         uses: docker/setup-qemu-action@v2
@@ -42,7 +42,7 @@ jobs:
             type=raw,value=latest
 
       - name: Build and push container
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           file: prod.Dockerfile
           platforms: linux/amd64

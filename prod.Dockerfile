@@ -12,14 +12,16 @@ ENV PATH="/root/.local/bin:${PATH}"
 WORKDIR /app
 
 SHELL [ "/bin/bash", "-euxo", "pipefail", "-c" ]
-RUN apt-get update && apt-get install -y --no-install-recommends curl
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && apt-get install -y --no-install-recommends curl
 
 ADD https://astral.sh/uv/${UV_VERSION}/install.sh install-uv.sh
+RUN chmod +x install-uv.sh && ./install-uv.sh
 
 COPY pyproject.toml uv.lock ./
 
-RUN chmod +x install-uv.sh && \
-    ./install-uv.sh && \
+RUN --mount=type=cache,target=/root/.cache/uv \
     uv venv .venv && \
     uv sync --frozen --no-dev
 
