@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 
 tasks:
   default:
@@ -8,42 +8,40 @@ tasks:
   init:
     desc: Initial setup
     cmds:
-      - pip install -U pre-commit
-      - pre-commit install
-      - mise trust -y
+      - prek install
       - mise install -y
-      - uv sync
+      - uv sync --dev
 
   up:
     desc: Build and start Docker containers
-    cmd: infisical run -- docker compose up --detach --build --remove-orphans {{.CLI_ARGS}}
+    cmd: infisical run -- docker compose up --build --remove-orphans {{ .CLI_ARGS }}
 
   logs:
     desc: Attach to Docker logs
     interactive: true
-    cmd: docker compose logs --follow {{.CLI_ARGS}}
+    cmd: docker compose logs --follow {{ .CLI_ARGS }}
 
   stop:
     desc: Stop containers
-    cmd: docker compose stop {{.CLI_ARGS}}
+    cmd: docker compose stop {{ .CLI_ARGS }}
 
   restart:
     desc: Restart containers
-    cmd: docker compose restart {{.CLI_ARGS}}
+    cmd: docker compose restart {{ .CLI_ARGS }}
 
   exec:
     desc: Run a command in the specified container
-    cmd: docker compose exec -- {{.CLI_ARGS}}
+    cmd: docker compose exec -- {{ .CLI_ARGS }}
 
   psql:
-    desc: Run psql
+    desc: Run pgcli
     interactive: true
-    cmd: task exec -- db psql "postgres://{{ .POSTGRESQL_USERNAME }}:{{ .POSTGRESQL_PASSWORD }}@localhost:5432/{{ .POSTGRESQL_DATABASE }}"
+    cmd: pgcli postgres://postgres:postgres@localhost:5432/postgres
 
   down:
     desc: Remove containers
-    cmd: docker compose down --remove-orphans {{.CLI_ARGS}}
+    cmd: docker compose down --remove-orphans {{ .CLI_ARGS }}
 
   clean:
     desc: Nuke everything
-    cmd: docker compose down --volumes --remove-orphans {{.CLI_ARGS}}
+    cmd: docker compose down --volumes --remove-orphans {{ .CLI_ARGS }}
