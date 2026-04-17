@@ -12,6 +12,9 @@
   "dependencies": {
     "@biomejs/biome": "^2.4.12",
     "@chat-adapter/discord": "^4.26.0",
-    "chat": "^4.26.0"
+    "@chat-adapter/state-pg": "^4.26.0",
+    "@t3-oss/env-core": "^0.13.11",
+    "chat": "^4.26.0",
+    "zod": "^4.3.6"
   }
 }
