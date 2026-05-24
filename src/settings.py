@@ -23,8 +23,8 @@ class Settings(BaseSettings):
     DISCORD_TOKEN: SecretStr
 
     NEW_SESSION_TITLE_PLACEHOLDER: str = "New conversation"
-    CHAT_MODEL: str = "gemini-3.1-flash-lite-preview"
-    TITLE_MODEL: str = "gemini-3.1-flash-lite-preview"
+    CHAT_MODEL: str = "gemini-3.1-flash-lite"
+    TITLE_MODEL: str = "gemini-3.1-flash-lite"
     SYSTEM_PROMPT: str = dedent("""\
     You are a friendly, helpful, general-purpose assistant.
     Respond with plain text.

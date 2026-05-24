@@ -6,7 +6,7 @@ from agno.storage.postgres import PostgresStorage
 from agno.tools.calculator import CalculatorTools
 from agno.tools.duckduckgo import DuckDuckGoTools
 from agno.tools.openweather import OpenWeatherTools
-from google.genai.types import GenerateContentConfig, ThinkingConfig
+from google.genai.types import GenerateContentConfig, ThinkingConfig, ThinkingLevel
 
 from src.settings import settings
 
@@ -20,7 +20,7 @@ def get_chat_agent(conversation_id: str, user_id: str):
             project_id=settings.GOOGLE_CLOUD_PROJECT,
             location=settings.GOOGLE_CLOUD_LOCATION,
             generation_config=GenerateContentConfig(
-                thinking_config=ThinkingConfig(thinking_budget=0)
+                thinking_config=ThinkingConfig(thinking_level=ThinkingLevel.MEDIUM)
             ),
         ),
         name="DiscAI",
