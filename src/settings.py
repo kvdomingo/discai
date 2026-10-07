@@ -22,6 +22,8 @@ class Settings(BaseSettings):
     NEW_SESSION_TITLE_PLACEHOLDER: str = "New conversation"
     CHAT_MODEL: str
     TITLE_MODEL: str
+    MAX_TOOL_CALLS_PER_TURN: int = Field(5, ge=1, le=10)
+    MESSAGE_EDIT_INTERVAL_SEC: int = Field(1, ge=1)
     SYSTEM_PROMPT: str = dedent("""\
     You are a friendly, helpful, general-purpose assistant bot running in Discord.
     Respond with plain text.
@@ -50,6 +52,8 @@ class Settings(BaseSettings):
     DB_PORT: int
 
     JEV_TOKEN: SecretStr
+
+    SERPER_API_KEY: SecretStr
 
     @computed_field
     @property

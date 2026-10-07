@@ -90,31 +90,38 @@ class BotCog(Cog):
                     history.append(AIMessage(h.content))
 
             llm = get_chat_model()
-            instructions = SystemMessage(
-                dedent(f"""
-                {settings.SYSTEM_PROMPT}
-
-                {settings.SYSTEM_PROMPT_ADDITIONAL_CONTEXT}
-                """).strip()
-            )
-
             # Filter out Discord tags/mentions
             prompt = HumanMessage(re.sub(r"\s*<@\d+>\s*", "", d.message.content))
             stream_t0 = time()
             full_message = ""
+            tool_status = ""
             new_message: Message | None = None
-            history = [instructions, *history, prompt]
+            history = [*history, prompt]
             try:
-                async for chunk in llm.astream(history):
-                    full_message += chunk.text
-                    if not full_message:
+                async for chunk, meta in llm.astream(
+                    {"messages": history}, stream_mode="messages"
+                ):
+                    if meta["langgraph_node"] != "model":
+                        continue
+
+                    # Only the first chunk of each streamed tool call carries its name
+                    for tc in chunk.tool_call_chunks:
+                        if tc["name"]:
+                            tool_status = f"Using tool `{tc['name']}`..."
+
+                    if chunk.text:
+                        full_message += chunk.text
+                        tool_status = ""
+
+                    display = "\n\n".join(filter(None, [full_message, tool_status]))
+                    if not display:
                         continue
 
                     if new_message is None:
-                        new_message = await thread.send(full_message)
+                        new_message = await thread.send(display)
                         stream_t0 = time()
-                    elif time() - stream_t0 > 1:
-                        await new_message.edit(content=full_message)
+                    elif time() - stream_t0 > settings.MESSAGE_EDIT_INTERVAL_SEC:
+                        await new_message.edit(content=display)
                         stream_t0 = time()
 
                 await alist(
@@ -136,6 +143,7 @@ class BotCog(Cog):
                     )
                 )
                 await q.db.commit()
+                history.append(AIMessage(full_message))
             except Exception as e:
                 await thread.send(
                     dedent("""```
@@ -150,13 +158,10 @@ class BotCog(Cog):
 
             await new_message.edit(content=full_message)
 
+            llm = get_title_model()
             if thread.name == settings.NEW_SESSION_TITLE_PLACEHOLDER:
-                llm = get_title_model()
                 res = await llm.ainvoke(
-                    [
-                        SystemMessage(settings.TITLE_SYSTEM_PROMPT),
-                        HumanMessage(prompt.text),
-                    ]
+                    [SystemMessage(settings.TITLE_SYSTEM_PROMPT), *history]
                 )
                 await thread.edit(name=res.text)
             else:
@@ -166,20 +171,23 @@ class BotCog(Cog):
                 )
                 if should_rename:
                     res = await llm.ainvoke(
-                        [
-                            SystemMessage(settings.TITLE_SYSTEM_PROMPT),
-                            HumanMessage(prompt.text),
-                        ]
+                        [SystemMessage(settings.TITLE_SYSTEM_PROMPT), *history]
                     )
                     await thread.edit(name=res.text)
 
 
 async def main():
     container = Container()
-    container.wire(modules=[__name__])
+    container.wire(modules=[__name__, "src.application.tools.google_search"])
+    await container.init_resources()
 
-    await bot.add_cog(BotCog(bot))
-    await bot.start(settings.DISCORD_TOKEN.get_secret_value())
+    try:
+        await bot.add_cog(BotCog(bot))
+        await bot.start(settings.DISCORD_TOKEN.get_secret_value())
+    except Exception as e:  # noqa: BLE001
+        logger.exception(e)
+    finally:
+        await container.shutdown_resources()
 
 
 if __name__ == "__main__":

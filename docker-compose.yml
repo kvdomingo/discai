@@ -25,6 +25,7 @@ services:
       CHAT_MODEL: ${CHAT_MODEL}
       TITLE_MODEL: ${TITLE_MODEL}
       JEV_TOKEN: ${JEV_TOKEN}
+      SERPER_API_KEY: ${SERPER_API_KEY}
     volumes:
       - .:/app
       - venv-data:/app/.venv

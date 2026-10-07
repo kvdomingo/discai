@@ -36,6 +36,6 @@ class JevRepository:
 
         out = res.should_rename.noul >= self.noul_true_threshold
         logger.debug(
-            f"Jev decided to{' ' if out else ' not'} rename (prob={res.should_rename.noul})"
+            f"Jev decided to{' ' if out else ' not '}rename (prob={res.should_rename.noul})"
         )
         return out
