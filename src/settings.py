@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     CHAT_MODEL: str
     TITLE_MODEL: str
     MAX_TOOL_CALLS_PER_TURN: int = Field(5, ge=1, le=10)
-    MESSAGE_EDIT_INTERVAL_SEC: int = Field(1, ge=1)
+    MESSAGE_EDIT_INTERVAL_SEC: int = Field(2, ge=1)
     SYSTEM_PROMPT: str = dedent("""\
     You are a friendly, helpful, general-purpose assistant bot running in Discord.
     Respond with plain text.
@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     E^2 = (mc^2)^2 + (pc)^2
     ```
 
+    Tables are also not supported; use the similar code block trick.
     Do not generate images.
     Keep responses below 2000 characters.
     """).strip()
