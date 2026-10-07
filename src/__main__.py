@@ -19,12 +19,25 @@ from src.repositories.generated.models import ChatRole
 from src.repositories.jev import JevRepository
 from src.repositories.querier import Querier
 from src.settings import settings
-from src.utils import alist
+from src.utils import alist, split_message
 
 intents = Intents.default()
 intents.message_content = True
 
 bot = Bot(command_prefix="ai!", intents=intents)
+
+
+async def render(thread: Thread, messages: list[Message], text: str) -> None:
+    """Spread `text` across `messages`, sending/editing/deleting to fit Discord's limit."""
+    chunks = split_message(text)
+    for i, chunk in enumerate(chunks):
+        if i >= len(messages):
+            messages.append(await thread.send(chunk))
+        elif messages[i].content != chunk:
+            messages[i] = await messages[i].edit(content=chunk)
+    for m in messages[len(chunks) :]:
+        await m.delete()
+    del messages[len(chunks) :]
 
 
 class BotCog(Cog):
@@ -95,7 +108,7 @@ class BotCog(Cog):
             stream_t0 = time()
             full_message = ""
             tool_status = ""
-            new_message: Message | None = None
+            sent_messages: list[Message] = []
             history = [*history, prompt]
             try:
                 async for chunk, meta in llm.astream(
@@ -117,11 +130,11 @@ class BotCog(Cog):
                     if not display:
                         continue
 
-                    if new_message is None:
-                        new_message = await thread.send(display)
-                        stream_t0 = time()
-                    elif time() - stream_t0 > settings.MESSAGE_EDIT_INTERVAL_SEC:
-                        await new_message.edit(content=display)
+                    if (
+                        not sent_messages
+                        or time() - stream_t0 > settings.MESSAGE_EDIT_INTERVAL_SEC
+                    ):
+                        await render(thread, sent_messages, display)
                         stream_t0 = time()
 
                 await alist(
@@ -153,10 +166,10 @@ class BotCog(Cog):
                 logger.exception(e)
                 raise
 
-            if new_message is None:
+            if not sent_messages:
                 raise ValueError("New message not found")
 
-            await new_message.edit(content=full_message)
+            await render(thread, sent_messages, full_message)
 
             llm = get_title_model()
             if thread.name == settings.NEW_SESSION_TITLE_PLACEHOLDER:
