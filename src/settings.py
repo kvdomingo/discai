@@ -49,6 +49,8 @@ class Settings(BaseSettings):
     DB_HOST: str
     DB_PORT: int
 
+    JEV_TOKEN: SecretStr
+
     @computed_field
     @property
     def SYSTEM_PROMPT_ADDITIONAL_CONTEXT(self) -> str:

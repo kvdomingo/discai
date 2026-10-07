@@ -14,7 +14,7 @@ tasks:
 
   up:
     desc: Build and start Docker containers
-    cmd: infisical run -- docker compose up --build --remove-orphans {{ .CLI_ARGS }}
+    cmd: infisical run --watch -- docker compose up --watch --remove-orphans {{ .CLI_ARGS }}
 
   logs:
     desc: Attach to Docker logs

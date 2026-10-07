@@ -24,6 +24,7 @@ services:
       POSTGRESQL_USERNAME: ${POSTGRESQL_USERNAME}
       CHAT_MODEL: ${CHAT_MODEL}
       TITLE_MODEL: ${TITLE_MODEL}
+      JEV_TOKEN: ${JEV_TOKEN}
     volumes:
       - .:/app
       - venv-data:/app/.venv
