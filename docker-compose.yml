@@ -10,10 +10,8 @@ services:
     image: ghcr.io/kvdomingo/discord-ai
     restart: unless-stopped
     environment:
-      AGNO_MONITOR: true
       GOOGLE_GENAI_USE_VERTEXAI: false
       PYTHON_ENV: development
-      AGNO_API_KEY: ${AGNO_API_KEY}
       DB_HOST: ${DB_HOST}
       DB_PORT: ${DB_PORT}
       DISCORD_TOKEN: ${DISCORD_TOKEN}
@@ -43,9 +41,9 @@ services:
     image: ghcr.io/kvdomingo/postgresql-pig:18
     restart: unless-stopped
     environment:
-      POSTGRES_USERNAME: ${POSTGRESQL_USERNAME}
+      POSTGRES_USER: ${POSTGRESQL_USERNAME}
       POSTGRES_PASSWORD: ${POSTGRESQL_PASSWORD}
-      POSTGRES_DATABASE: ${POSTGRESQL_DATABASE}
+      POSTGRES_DB: ${POSTGRESQL_DATABASE}
     volumes:
       - db-data:/var/lib/postgresql
       - ./db-init:/docker-entrypoint-initdb.d:ro

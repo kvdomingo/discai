@@ -53,12 +53,14 @@ spec:
             - configMapRef:
                 name: '{{- include "discai.fullname" . }}-configmap'
         - name: '{{ .Chart.Name }}-init-migrations'
-          image: '{{ .Values.image.repository }}:{{ .Values.image.tag }}'
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command:
-            - /app/.venv/bin/alembic
-            - upgrade
-            - head
+            - /bin/sh
+            - -eu
+            - -c
+          args:
+            - dbmate up
           envFrom:
             - secretRef:
                 name: '{{- include "discai.fullname" . }}-secrets'

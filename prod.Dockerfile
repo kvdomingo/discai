@@ -1,4 +1,4 @@
-FROM python:3.12-slim AS base
+FROM python:3.14-slim AS base
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
@@ -16,13 +16,15 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 COPY pyproject.toml uv.lock ./
 
 RUN --mount=type=cache,target=/root/.cache/uv \
-    --mount=from=astral/uv:0.11,source=/uv,target=/bin/uv \
+    --mount=from=astral/uv:0.12,source=/uv,target=/bin/uv \
     uv venv .venv && \
     uv sync --frozen --no-dev
 
 FROM base
 
 WORKDIR /app
+
+COPY --from=ghcr.io/amacneil/dbmate:2 /usr/local/bin/dbmate /usr/local/bin/dbmate
 
 COPY --from=build /app/.venv /app/.venv
 COPY . .

@@ -50,13 +50,16 @@ class BotCog(Cog):
             q = Querier(db)
 
             if isinstance(message.channel, Thread):
-                thread_in_db = await q.conversations.get_conversation_by_id(
-                    id=str(message.channel.id)
+                thread_in_db = (
+                    await q.conversations.get_conversation_by_guild_channel_id(
+                        guild_id=message.guild.id,
+                        channel_id=message.channel.id,
+                    )
                 )
                 if thread_in_db is None:
                     return
 
-                thread = self.client.get_channel(int(thread_in_db.channel_id))
+                thread = message.channel
             else:
                 thread = await message.create_thread(
                     name=settings.NEW_SESSION_TITLE_PLACEHOLDER
@@ -69,9 +72,6 @@ class BotCog(Cog):
                     raise RuntimeError("Failed to create conversation in DB")
 
                 await q.db.commit()
-
-            if not isinstance(thread, Thread):
-                raise TypeError(f"Expected Thread, got {type(thread)}")
 
             history = []
             async for h in q.messages.list_messages_in_conversation(id=thread_in_db.id):
@@ -93,25 +93,19 @@ class BotCog(Cog):
             prompt = HumanMessage(re.sub(r"\s*<@\d+>\s*", "", message.content))
             stream_t0 = time()
             full_message = ""
-            i = 0
             new_message: Message | None = None
             try:
                 async for chunk in llm.astream([instructions, *history, prompt]):
-                    full_message += str(chunk.text)
-
-                    if i == 0:
-                        new_message = await thread.send(chunk.text)
-                        i += 1
+                    full_message += chunk.text
+                    if not full_message:
                         continue
 
                     if new_message is None:
-                        raise ValueError("New message not found")
-
-                    stream_t1 = time()
-                    if stream_t1 - stream_t0 > 1:
+                        new_message = await thread.send(full_message)
+                        stream_t0 = time()
+                    elif time() - stream_t0 > 1:
                         await new_message.edit(content=full_message)
-                    stream_t0 = time()
-                    i += 1
+                        stream_t0 = time()
 
                 await alist(
                     q.messages.create_messages(
@@ -120,7 +114,7 @@ class BotCog(Cog):
                                 conversation_id=thread_in_db.id,
                                 author_id=message.author.id,
                                 chat_role=ChatRole.USER,
-                                content=message.content,
+                                content=prompt.text,
                             ),
                             CreateMessagesParams(
                                 conversation_id=thread_in_db.id,

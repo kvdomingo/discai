@@ -1,7 +1,6 @@
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
-from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from src.settings import settings
@@ -21,10 +20,5 @@ session_maker = async_sessionmaker(
 
 @asynccontextmanager
 async def get_db() -> AsyncGenerator[AsyncSession]:
-    session = session_maker()
-    try:
+    async with session_maker() as session:
         yield session
-    except Exception as e:
-        logger.exception(str(e))
-    finally:
-        await session.close()
