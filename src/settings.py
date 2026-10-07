@@ -55,6 +55,8 @@ class Settings(BaseSettings):
 
     SERPER_API_KEY: SecretStr
 
+    GLOBAL_HTTP_CLIENTS_TIMEOUT_SEC: int = Field(10, gt=0)
+
     @computed_field
     @property
     def SYSTEM_PROMPT_ADDITIONAL_CONTEXT(self) -> str:

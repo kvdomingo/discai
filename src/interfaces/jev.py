@@ -11,6 +11,8 @@ async def get_jev_client() -> AsyncGenerator[AsyncTypeSafeClient]:
         api_key=settings.JEV_TOKEN.get_secret_value(),
         model="jev-latest",
         http_client=AsyncClient(http2=True),
-        retry=RetryPolicy(max_retries=3, timeout=10),
+        retry=RetryPolicy(
+            max_retries=3, timeout=settings.GLOBAL_HTTP_CLIENTS_TIMEOUT_SEC
+        ),
     ) as client:
         yield client

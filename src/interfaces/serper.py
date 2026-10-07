@@ -12,6 +12,6 @@ async def get_serper_client() -> AsyncGenerator[AsyncClient]:
             "X-API-KEY": settings.SERPER_API_KEY.get_secret_value(),
             "Content-Type": "application/json",
         },
-        http2=True,
+        timeout=settings.GLOBAL_HTTP_CLIENTS_TIMEOUT_SEC,
     ) as client:
         yield client
