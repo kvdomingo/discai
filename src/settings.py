@@ -1,4 +1,3 @@
-import os
 from functools import lru_cache
 from pathlib import Path
 from textwrap import dedent
@@ -18,17 +17,22 @@ class Settings(BaseSettings):
     GOOGLE_CLOUD_LOCATION: str
 
     OPENWEATHERMAP_API_KEY: SecretStr
-    AGNO_API_KEY: SecretStr
-    AGNO_MONITOR: bool
     DISCORD_TOKEN: SecretStr
 
     NEW_SESSION_TITLE_PLACEHOLDER: str = "New conversation"
     CHAT_MODEL: str
     TITLE_MODEL: str
     SYSTEM_PROMPT: str = dedent("""\
-    You are a friendly, helpful, general-purpose assistant.
+    You are a friendly, helpful, general-purpose assistant bot running in Discord.
     Respond with plain text.
-    Markdown and code blocks are allowed.
+    Discord Markdown and code blocks are allowed.
+    LaTeX is not supported. If you need to show math equations, use plain characters
+    in a code block like so:
+
+    ```
+    E^2 = (mc^2)^2 + (pc)^2
+    ```
+
     Do not generate images.
     Keep responses below 2000 characters.
     """).strip()
@@ -49,11 +53,13 @@ class Settings(BaseSettings):
     @property
     def SYSTEM_PROMPT_ADDITIONAL_CONTEXT(self) -> str:
         return dedent(f"""\
-        When asked about yourself, use the following metadata:
+        When asked about yourself, use the following information:
         - Your name is DiscAI.
-        - You are a Discord chat bot developed by GitHub user [kvdomingo](https://github.com/kvdomingo).
-        - Behind the scenes, you are powered by the `{self.CHAT_MODEL}` large language model developed by Google.
-        """)
+        - You are a Discord chat bot developed by GitHub user
+          [kvdomingo](https://github.com/kvdomingo).
+        - Behind the scenes, you are powered by the `{self.CHAT_MODEL}` large language
+          model developed by Google.
+        """).strip()
 
     @computed_field
     @property
@@ -89,10 +95,7 @@ class Settings(BaseSettings):
 
 @lru_cache
 def _get_settings() -> Settings:
-    settings = Settings()  # ty:ignore[missing-argument]
-    os.environ.setdefault("AGNO_API_KEY", settings.AGNO_API_KEY.get_secret_value())
-    os.environ.setdefault("AGNO_MONITOR", str(settings.AGNO_MONITOR).lower())
-    return settings
+    return Settings()
 
 
 settings = _get_settings()

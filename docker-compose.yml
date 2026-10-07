@@ -1,4 +1,4 @@
-name: discord-ai
+name: discai
 
 volumes:
   db-data:
@@ -9,7 +9,6 @@ services:
     build: .
     image: ghcr.io/kvdomingo/discord-ai
     restart: unless-stopped
-    init: true
     environment:
       AGNO_MONITOR: true
       GOOGLE_GENAI_USE_VERTEXAI: false
@@ -25,31 +24,47 @@ services:
       POSTGRESQL_DATABASE: ${POSTGRESQL_DATABASE}
       POSTGRESQL_PASSWORD: ${POSTGRESQL_PASSWORD}
       POSTGRESQL_USERNAME: ${POSTGRESQL_USERNAME}
+      CHAT_MODEL: ${CHAT_MODEL}
+      TITLE_MODEL: ${TITLE_MODEL}
     volumes:
-      - ./:/app
+      - .:/app
       - venv-data:/app/.venv
     depends_on:
       db:
         condition: service_healthy
+    develop:
+      watch:
+        - path: pyproject.toml
+          action: restart
+        - path: uv.lock
+          action: restart
 
   db:
-    image: ghcr.io/kvdomingo/postgresql-pig-standalone:17-bitnami
+    image: ghcr.io/kvdomingo/postgresql-pig:18
     restart: unless-stopped
     environment:
-      POSTGRESQL_USERNAME: ${POSTGRESQL_USERNAME}
-      POSTGRESQL_PASSWORD: ${POSTGRESQL_PASSWORD}
-      POSTGRESQL_DATABASE: ${POSTGRESQL_DATABASE}
+      POSTGRES_USERNAME: ${POSTGRESQL_USERNAME}
+      POSTGRES_PASSWORD: ${POSTGRESQL_PASSWORD}
+      POSTGRES_DATABASE: ${POSTGRESQL_DATABASE}
     volumes:
-      - db-data:/bitnami/postgresql
+      - db-data:/var/lib/postgresql
       - ./db-init:/docker-entrypoint-initdb.d:ro
     ports:
-      - '5432:5432'
+      - "5432:5432"
     healthcheck:
-      test: [ "CMD", "pg_isready", "-U", "${POSTGRESQL_USERNAME}", "-d", "${POSTGRESQL_DATABASE}" ]
+      test:
+        [
+          "CMD",
+          "pg_isready",
+          "-U",
+          "${POSTGRESQL_USERNAME}",
+          "-d",
+          "${POSTGRESQL_DATABASE}",
+        ]
       timeout: 2s
-      start_interval: 5s
       interval: 20s
-      start_period: 60s
+      start_period: 10s
+      retries: 3
 
   rest:
     image: postgrest/postgrest:v12.2.8
@@ -62,7 +77,7 @@ services:
       PGRST_JWT_IS_BASE64: ${PGRST_JWT_IS_BASE64}
       PGRST_DB_ANON_ROLE: anon
     ports:
-      - '3000:3000'
+      - "3000:3000"
     depends_on:
       db:
         condition: service_healthy
@@ -73,6 +88,6 @@ services:
     environment:
       API_URL: http://localhost:3000
     ports:
-      - '8080:8080'
+      - "8080:8080"
     depends_on:
       - rest

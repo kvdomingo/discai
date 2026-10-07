@@ -10,7 +10,7 @@ tasks:
     cmds:
       - mise install -y
       - prek install
-      - uv sync --dev
+      - uv sync --dev --all-groups
 
   up:
     desc: Build and start Docker containers

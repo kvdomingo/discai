@@ -3,16 +3,18 @@ import re
 from textwrap import dedent
 from time import time
 
-from agno.exceptions import ModelProviderError
-from agno.run.response import RunResponse
 from discord import Intents, Message, Thread
 from discord.ext.commands import Bot, Cog
+from langchain.messages import AIMessage, HumanMessage, SystemMessage
 from loguru import logger
-from sqlalchemy import text
 
-from src.agent import get_chat_agent, title_agent
 from src.db import get_db
+from src.models import get_chat_model, get_title_model
+from src.repositories.generated.messages import CreateMessagesParams
+from src.repositories.generated.models import ChatRole
+from src.repositories.querier import Querier
 from src.settings import settings
+from src.utils import alist
 
 intents = Intents.default()
 intents.message_content = True
@@ -32,7 +34,8 @@ class BotCog(Cog):
     async def on_message(self, message: Message):
         # Interaction w/ DiscAI happens when
         # - User sends a regular message in a channel mentioning DiscAI
-        # - User sends a message in a thread that was created from a previous message mentioning DiscAI
+        # - User sends a message in a thread that was created from a previous message
+        #   mentioning DiscAI
 
         if message.author.bot:
             return
@@ -44,51 +47,60 @@ class BotCog(Cog):
             return
 
         async with message.channel.typing(), get_db() as db:
-            if isinstance(message.channel, Thread):
-                thread_in_db = (
-                    (
-                        await db.execute(
-                            text("""
-                            SELECT * FROM agent_sessions
-                            WHERE session_id = :session_id
-                            LIMIT 1
-                            """),
-                            {"session_id": str(message.channel.id)},
-                        )
-                    )
-                    .mappings()
-                    .first()
-                )
+            q = Querier(db)
 
+            if isinstance(message.channel, Thread):
+                thread_in_db = await q.conversations.get_conversation_by_id(
+                    id=str(message.channel.id)
+                )
                 if thread_in_db is None:
                     return
 
-                thread = self.client.get_channel(int(thread_in_db["session_id"]))
+                thread = self.client.get_channel(int(thread_in_db.channel_id))
             else:
                 thread = await message.create_thread(
                     name=settings.NEW_SESSION_TITLE_PLACEHOLDER
                 )
+                thread_in_db = await q.conversations.create_conversation(
+                    guild_id=message.guild.id,
+                    channel_id=thread.id,
+                )
+                if thread_in_db is None:
+                    raise RuntimeError("Failed to create conversation in DB")
+
+                await q.db.commit()
 
             if not isinstance(thread, Thread):
                 raise TypeError(f"Expected Thread, got {type(thread)}")
 
-            agent = get_chat_agent(
-                conversation_id=str(thread.id),
-                user_id=str(message.author.id),
+            history = []
+            async for h in q.messages.list_messages_in_conversation(id=thread_in_db.id):
+                if h.chat_role == ChatRole.USER:
+                    history.append(HumanMessage(h.content))
+                if h.chat_role == ChatRole.ASSISTANT:
+                    history.append(AIMessage(h.content))
+
+            llm = get_chat_model()
+            instructions = SystemMessage(
+                dedent(f"""
+                {settings.SYSTEM_PROMPT}
+
+                {settings.SYSTEM_PROMPT_ADDITIONAL_CONTEXT}
+                """).strip()
             )
+
             # Filter out Discord tags/mentions
-            content = re.sub(r"\s*<@\d+>\s*", "", message.content)
-            chunk: RunResponse
+            prompt = HumanMessage(re.sub(r"\s*<@\d+>\s*", "", message.content))
             stream_t0 = time()
             full_message = ""
             i = 0
             new_message: Message | None = None
             try:
-                async for chunk in await agent.arun(content, stream=True):
-                    full_message += str(chunk.content)
+                async for chunk in llm.astream([instructions, *history, prompt]):
+                    full_message += str(chunk.text)
 
                     if i == 0:
-                        new_message = await thread.send(chunk.content)
+                        new_message = await thread.send(chunk.text)
                         i += 1
                         continue
 
@@ -100,27 +112,31 @@ class BotCog(Cog):
                         await new_message.edit(content=full_message)
                     stream_t0 = time()
                     i += 1
-            except ModelProviderError as e:
-                if "service unavailable" in e.message.lower():
-                    await thread.send(
-                        dedent("""```
-                        [SYSTEM] The Gemini API is currently experiencing high traffic. Please try again later.
-                        ```""")
+
+                await alist(
+                    q.messages.create_messages(
+                        arg=[
+                            CreateMessagesParams(
+                                conversation_id=thread_in_db.id,
+                                author_id=message.author.id,
+                                chat_role=ChatRole.USER,
+                                content=message.content,
+                            ),
+                            CreateMessagesParams(
+                                conversation_id=thread_in_db.id,
+                                author_id=None,
+                                chat_role=ChatRole.ASSISTANT,
+                                content=full_message,
+                            ),
+                        ]
                     )
-                    logger.exception(e)
-                else:
-                    await thread.send(
-                        dedent("""```
-                        [SYSTEM] An unknown error occurred. Please try again later.
-                        ```""")
-                    )
-                    logger.exception(e)
-                raise
+                )
+                await q.db.commit()
             except Exception as e:
                 await thread.send(
                     dedent("""```
                     [SYSTEM] An unknown error occurred. Please try again later.
-                    ```""")
+                    ```""").strip()
                 )
                 logger.exception(e)
                 raise
@@ -131,8 +147,14 @@ class BotCog(Cog):
             await new_message.edit(content=full_message)
 
             if thread.name == settings.NEW_SESSION_TITLE_PLACEHOLDER:
-                res = await title_agent.arun(content)
-                await thread.edit(name=res.content)
+                llm = get_title_model()
+                res = await llm.ainvoke(
+                    [
+                        SystemMessage(settings.TITLE_SYSTEM_PROMPT),
+                        HumanMessage(prompt.text),
+                    ]
+                )
+                await thread.edit(name=res.text)
 
 
 async def main():

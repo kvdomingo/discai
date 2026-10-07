@@ -1,0 +1,24 @@
+version: "2"
+plugins:
+  - name: py
+    wasm:
+      url: https://github.com/kvdomingo/sqlc-gen-python/releases/download/v1.0.1/sqlc-gen-python.wasm
+      sha256: 3e9767af784b728ec9bd4499619721e5dabdebeb21cf3c7fe86a045d865584d1
+sql:
+  - schema: src/repositories/sql/migrations
+    queries: src/repositories/sql/queries
+    engine: postgresql
+    codegen:
+      - out: src/repositories/generated
+        plugin: py
+        options:
+          package: src.repositories.generated
+          emit_sync_querier: true
+          emit_async_querier: true
+          emit_pydantic_models: true
+          emit_str_enum: true
+          emit_modern_types: true
+          emit_generic_querier: true
+          emit_aware_datetime: true
+          emit_querier_protocol: true
+          emit_query_errors: true
