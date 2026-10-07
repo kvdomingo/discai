@@ -6,7 +6,7 @@ from typesafe_sdk import AsyncTypeSafeClient, RetryPolicy
 from src.settings import settings
 
 
-async def get_jev_client() -> AsyncGenerator[AsyncTypeSafeClient]:
+async def get_typesafe_client() -> AsyncGenerator[AsyncTypeSafeClient]:
     async with AsyncTypeSafeClient(
         api_key=settings.JEV_TOKEN.get_secret_value(),
         model="jev-latest",

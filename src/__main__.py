@@ -1,7 +1,6 @@
 import asyncio
-import re
+import logging
 from collections.abc import Callable
-from textwrap import dedent
 from time import time
 from typing import cast
 
@@ -11,33 +10,22 @@ from discord.ext.commands import Bot, Cog
 from langchain.messages import AIMessage, HumanMessage, SystemMessage
 from loguru import logger
 
+from src.application.logging import InterceptHandler
+from src.application.messaging import render, strip_mentions
 from src.dependencies import Container
 from src.models.chat import get_chat_model, get_title_model
-from src.repositories.discord import DiscordRepository
+from src.repositories.discord import DiscordMessageRepository
 from src.repositories.generated.messages import CreateMessagesParams
 from src.repositories.generated.models import ChatRole
-from src.repositories.jev import JevRepository
-from src.repositories.querier import Querier
+from src.repositories.queriers import AsyncQueriers
+from src.repositories.typesafe import TypeSafeRepository
 from src.settings import settings
-from src.utils import alist, split_message
+from src.utils import alist
 
 intents = Intents.default()
 intents.message_content = True
 
 bot = Bot(command_prefix="ai!", intents=intents)
-
-
-async def render(thread: Thread, messages: list[Message], text: str) -> None:
-    """Spread `text` across `messages`, sending/editing/deleting to fit Discord's limit."""
-    chunks = split_message(text)
-    for i, chunk in enumerate(chunks):
-        if i >= len(messages):
-            messages.append(await thread.send(chunk))
-        elif messages[i].content != chunk:
-            messages[i] = await messages[i].edit(content=chunk)
-    for m in messages[len(chunks) :]:
-        await m.delete()
-    del messages[len(chunks) :]
 
 
 class BotCog(Cog):
@@ -46,7 +34,7 @@ class BotCog(Cog):
 
     @Cog.listener()
     async def on_ready(self):
-        logger.info("Hello, Discord!")
+        logger.info("Hello, DiscAI!")
 
     @inject
     @Cog.listener()
@@ -54,16 +42,18 @@ class BotCog(Cog):
         self,
         message: Message,
         *,
-        q: Querier = Provide[Container.querier],
-        jev: JevRepository = Provide[Container.jev_repo],
-        make_discord: Callable[..., DiscordRepository] = Provide[
-            Container.discord_repo.provider
+        q: AsyncQueriers = Provide[Container.queriers],
+        jev: TypeSafeRepository = Provide[Container.typesafe_repo],
+        make_discord: Callable[..., DiscordMessageRepository] = Provide[
+            Container.discord_message_repo.provider
         ],
     ):
-        # Interaction w/ DiscAI happens when
-        # - User sends a regular message in a channel mentioning DiscAI
-        # - User sends a message in a thread that was created from a previous message
-        #   mentioning DiscAI
+        """
+        Interaction w/ DiscAI happens when
+          - User sends a regular message in a channel mentioning DiscAI
+          - User sends a message in a thread that was created from a previous message
+            mentioning DiscAI
+        """
         d = make_discord(client=self.client, message=message)
 
         if d.is_author_bot:
@@ -102,16 +92,16 @@ class BotCog(Cog):
                 if h.chat_role == ChatRole.ASSISTANT:
                     history.append(AIMessage(h.content))
 
-            llm = get_chat_model()
             # Filter out Discord tags/mentions
-            prompt = HumanMessage(re.sub(r"\s*<@\d+>\s*", "", d.message.content))
+            prompt = HumanMessage(strip_mentions(d.message.content))
             stream_t0 = time()
             full_message = ""
             tool_status = ""
             sent_messages: list[Message] = []
             history = [*history, prompt]
+            chat_llm = get_chat_model()
             try:
-                async for chunk, meta in llm.astream(
+                async for chunk, meta in chat_llm.astream(
                     {"messages": history}, stream_mode="messages"
                 ):
                     if meta["langgraph_node"] != "model":
@@ -158,11 +148,7 @@ class BotCog(Cog):
                 await q.db.commit()
                 history.append(AIMessage(full_message))
             except Exception as e:
-                await thread.send(
-                    dedent("""```
-                    [SYSTEM] An unknown error occurred. Please try again later.
-                    ```""").strip()
-                )
+                await thread.send("An unknown error occurred. Please try again later.")
                 logger.exception(e)
                 raise
 
@@ -171,11 +157,15 @@ class BotCog(Cog):
 
             await render(thread, sent_messages, full_message)
 
-            llm = get_title_model()
+            prompt = HumanMessage("Generate a title for this conversation.")
+            title_messages = [
+                SystemMessage(settings.TITLE_SYSTEM_PROMPT),
+                *history,
+                prompt,
+            ]
+            title_llm = get_title_model()
             if thread.name == settings.NEW_SESSION_TITLE_PLACEHOLDER:
-                res = await llm.ainvoke(
-                    [SystemMessage(settings.TITLE_SYSTEM_PROMPT), *history]
-                )
+                res = await title_llm.ainvoke(title_messages)
                 await thread.edit(name=res.text)
             else:
                 should_rename = await jev.should_rename(
@@ -183,9 +173,7 @@ class BotCog(Cog):
                     history=[h.text for h in history],
                 )
                 if should_rename:
-                    res = await llm.ainvoke(
-                        [SystemMessage(settings.TITLE_SYSTEM_PROMPT), *history]
-                    )
+                    res = await title_llm.ainvoke(title_messages)
                     await thread.edit(name=res.text)
 
 
@@ -204,4 +192,5 @@ async def main():
 
 
 if __name__ == "__main__":
+    logging.basicConfig(handlers=[InterceptHandler()], level=logging.INFO, force=True)
     asyncio.run(main())

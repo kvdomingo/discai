@@ -40,8 +40,8 @@ class Settings(BaseSettings):
     Keep responses below 2000 characters.
     """).strip()
     TITLE_SYSTEM_PROMPT: str = dedent("""\
-    Generate a short title for the provided message.
-    The title must be a very concise summary of the message.
+    Generate a short title for the provided conversation.
+    The title must be a very concise summary of the conversation.
     Do not exceed 20 characters.
     Use only plain text. Do not use any special characters.
     """).strip()
@@ -57,6 +57,11 @@ class Settings(BaseSettings):
     SERPER_API_KEY: SecretStr
 
     GLOBAL_HTTP_CLIENTS_TIMEOUT_SEC: int = Field(10, gt=0)
+
+    @computed_field
+    @property
+    def PRODUCTION(self) -> bool:
+        return self.PYTHON_ENV == "production"
 
     @computed_field
     @property

@@ -1,3 +1,4 @@
+import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
@@ -7,9 +8,11 @@ from src.settings import settings
 
 engine = create_async_engine(
     url=settings.DATABASE_URL_ASYNC,
-    echo=True,
     future=True,
 )
+
+if settings.PYTHON_ENV == "development":
+    logging.getLogger("sqlalchemy.engine").setLevel(logging.INFO)
 
 session_maker = async_sessionmaker(
     bind=engine,

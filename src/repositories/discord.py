@@ -4,7 +4,7 @@ from discord.ext.commands import Bot
 from src.settings import settings
 
 
-class DiscordRepository:
+class DiscordMessageRepository:
     def __init__(self, *, client: Bot, message: Message):
         self.client = client
         self.message = message

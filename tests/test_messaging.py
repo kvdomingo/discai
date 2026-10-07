@@ -1,4 +1,4 @@
-from src.utils import _open_formatting, split_message
+from src.application.messaging import _open_formatting, split_message
 
 
 def assert_well_formed(chunks: list[str], limit: int = 2000) -> None:

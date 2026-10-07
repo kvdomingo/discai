@@ -1,15 +1,26 @@
 from textwrap import dedent
+from typing import Any
 
 from langchain.agents import create_agent
 from langchain.agents.middleware import ToolCallLimitMiddleware
+from langchain.agents.middleware.types import (
+    AgentState,
+    InputAgentState,
+    OutputAgentState,
+)
 from langchain.chat_models import BaseChatModel, init_chat_model
 from langchain_core.messages import SystemMessage
+from langgraph.graph.state import CompiledStateGraph
 
 from src.application.tools.google_search import google_search
 from src.settings import settings
 
+type ChatModelOutput = CompiledStateGraph[
+    AgentState, Any, InputAgentState, OutputAgentState
+]
 
-def get_chat_model():
+
+def get_chat_model() -> ChatModelOutput:
     return create_agent(
         init_chat_model(f"google_genai:{settings.CHAT_MODEL}"),
         tools=[google_search],

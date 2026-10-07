@@ -3,10 +3,10 @@ from textwrap import dedent
 from loguru import logger
 from typesafe_sdk import AsyncTypeSafeClient, Noul, NoulCriteria
 
-from src.models.jev import ShouldRenameResponse
+from src.models.typesafe import ShouldRenameResponse
 
 
-class JevRepository:
+class TypeSafeRepository:
     def __init__(self, *, client: AsyncTypeSafeClient) -> None:
         self.client = client
         self.noul_true_threshold: float = 2 / 3
